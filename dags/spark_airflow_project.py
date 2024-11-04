@@ -3,10 +3,17 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
+#Variables
+metadata_path = "/data/archive/metadata.csv"
+json_folder_path = "/data/archive/noncomm_use_subset/noncomm_use_subset/pdf_json"
+output_metadata_path = "/data/bronze/metadata.csv"
+partition_number = 3
+
+
 dag = DAG(
-    dag_id = "sparking_flow",
+    dag_id = "Covid-19-pipeline",
     default_args = {
-        "owner": "Yusuf Ganiyu",
+        "owner": "Anna and Mikolaj",
         "start_date": airflow.utils.dates.days_ago(1)
     },
     schedule_interval = "@daily"
@@ -22,31 +29,16 @@ source_data_job = SparkSubmitOperator(
     task_id="source_data_job",
     conn_id="spark-conn",
     application="jobs/python/load_data.py",
+    application_args=[metadata_path, json_folder_path, output_metadata_path, str(partition_number)],
     dag=dag
 )
 
-python_job = SparkSubmitOperator(
-    task_id="python_job",
+health_check_job = SparkSubmitOperator(
+    task_id="health_check_job",
     conn_id="spark-conn",
     application="jobs/python/wordcountjob.py",
     dag=dag
 )
-
-scala_job = SparkSubmitOperator(
-    task_id="scala_job",
-    conn_id="spark-conn",
-    application="jobs/scala/target/scala-2.12/word-count_2.12-0.1.jar",
-    dag=dag
-)
-
-java_job = SparkSubmitOperator(
-    task_id="java_job",
-    conn_id="spark-conn",
-    application="jobs/java/spark-job/target/spark-job-1.0-SNAPSHOT.jar",
-    java_class="com.airscholar.spark.WordCountJob",
-    dag=dag
-)
-
 
 end = PythonOperator(
     task_id="end",
@@ -54,4 +46,4 @@ end = PythonOperator(
     dag=dag
 )
 
-start >> [python_job, scala_job, java_job] >> source_data_job >> end
+start >> health_check_job >> source_data_job >> end

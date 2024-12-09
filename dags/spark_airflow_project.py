@@ -9,6 +9,9 @@ json_folder_path = "/data/archive/noncomm_use_subset/noncomm_use_subset/pdf_json
 output_metadata_path = "/data/bronze/metadata.csv"
 output_json_path = "/data/bronze/json_data"
 partition_metadata_path = "/data/partition/metadata.csv"
+output_author_path = "/data/silver/authors"
+output_publication_path = "/data/silver/publications"
+output_disease_path = "/data/silver/diseases"
 partition_number = 3
 
 
@@ -55,9 +58,11 @@ load_jsons_job = SparkSubmitOperator(
 )
 
 
-load_to_silver_job = PythonOperator(
+load_to_silver_job = SparkSubmitOperator(
     task_id="load_to_silver",
-    python_callable = lambda: print("Load to silver started"),
+    conn_id="spark-conn",
+    application="jobs/python/load_silver.py",
+    application_args=[metadata_path, json_folder_path, output_author_path, output_publication_path , output_disease_path],
     dag=dag
 )
 

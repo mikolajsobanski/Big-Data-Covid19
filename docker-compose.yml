@@ -2,6 +2,16 @@ version: '3'
 
 x-spark-common: &spark-common
   image: bitnami/spark:3.4.2
+  environment:
+    - PYSPARK_PYTHON=/usr/bin/python3
+    - PYSPARK_DRIVER_PYTHON=/usr/bin/python3
+  command: >
+    bash -c "
+    apt-get update &&
+    apt-get install -y python3-pip &&
+    pip3 install spacy==3.7.3 &&
+    python3 -m spacy download en_core_web_lg &&
+    /opt/bitnami/scripts/spark/entrypoint.sh"
   volumes:
     - ./jobs:/opt/bitnami/spark/jobs
     - ./data:/data
